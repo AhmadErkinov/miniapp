@@ -7,8 +7,7 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     body {
-      margin: 0;
-      font-family: sans-serif;
+      margin: 0; padding-bottom: 70px; font-family: sans-serif;
       background: var(--tg-theme-bg-color, #fff);
       color: var(--tg-theme-text-color, #000);
     }
@@ -30,6 +29,13 @@
     .name { font-weight: 600; font-size: 14px; }
     .meta { font-size: 12px; opacity: 0.7; margin-top: 4px; }
     .price { margin-top: 6px; font-weight: 600; color: var(--tg-theme-link-color, #2481cc); }
+    .ctrl { margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 14px; }
+    .ctrl button {
+      border: none; border-radius: 8px; padding: 8px 14px; font-size: 16px;
+      background: var(--tg-theme-button-color, #2481cc);
+      color: var(--tg-theme-button-text-color, #fff);
+    }
+    .ctrl .add { width: 100%; font-size: 14px; }
   </style>
 </head>
 <body>
@@ -47,16 +53,42 @@
       "Ehtiyot qismlar", "Kantselyariya", "Robototexnika"
     ];
 
-    // Namuna ma'lumotlar: keyin o'zingizniki bilan almashtirasiz
     const products = [
-      { name: "Minora brelok", cat: "Suvenirlar", price: 25000, material: "PLA", icon: "🗼" },
-      { name: "Gul tuvak", cat: "Dekorativ buyumlar", price: 60000, material: "PLA", icon: "🪴" },
-      { name: "Shesterna 20 tish", cat: "Ehtiyot qismlar", price: 15000, material: "PETG", icon: "⚙️" },
-      { name: "Qalam qutisi", cat: "Kantselyariya", price: 40000, material: "PLA", icon: "✏️" },
-      { name: "Servo mahkamlagich", cat: "Robototexnika", price: 30000, material: "PETG", icon: "🤖" }
+      { id: 1, name: "Minora brelok", cat: "Suvenirlar", price: 25000, material: "PLA", icon: "🗼" },
+      { id: 2, name: "Gul tuvak", cat: "Dekorativ buyumlar", price: 60000, material: "PLA", icon: "🪴" },
+      { id: 3, name: "Shesterna 20 tish", cat: "Ehtiyot qismlar", price: 15000, material: "PETG", icon: "⚙️" },
+      { id: 4, name: "Qalam qutisi", cat: "Kantselyariya", price: 40000, material: "PLA", icon: "✏️" },
+      { id: 5, name: "Servo mahkamlagich", cat: "Robototexnika", price: 30000, material: "PETG", icon: "🤖" }
     ];
 
     let active = "Hammasi";
+    const cart = {}; // { mahsulot_id: soni }
+
+    function total() {
+      return products.reduce((sum, p) => sum + (cart[p.id] || 0) * p.price, 0);
+    }
+
+    function updateButton() {
+      const t = total();
+      if (t > 0) {
+        tg.MainButton.setText("Buyurtma berish: " + t.toLocaleString("ru-RU") + " so'm");
+        tg.MainButton.show();
+      } else {
+        tg.MainButton.hide();
+      }
+    }
+
+    function change(id, delta) {
+      cart[id] = Math.max(0, (cart[id] || 0) + delta);
+      if (!cart[id]) delete cart[id];
+      renderProducts();
+      updateButton();
+    }
+
+    tg.MainButton.onClick(() => {
+      const items = Object.entries(cart).map(([id, qty]) => ({ id: Number(id), qty }));
+      tg.sendData(JSON.stringify({ items }));
+    });
 
     function renderTabs() {
       const box = document.getElementById("tabs");
@@ -71,15 +103,21 @@
     }
 
     function renderProducts() {
-      const grid = document.getElementById("grid");
       const list = active === "Hammasi" ? products : products.filter(p => p.cat === active);
-      grid.innerHTML = list.map(p => `
-        <div class="card">
-          <div class="pic">${p.icon}</div>
-          <div class="name">${p.name}</div>
-          <div class="meta">${p.material}</div>
-          <div class="price">${p.price.toLocaleString("ru-RU")} so'm</div>
-        </div>`).join("");
+      document.getElementById("grid").innerHTML = list.map(p => {
+        const q = cart[p.id] || 0;
+        const ctrl = q
+          ? `<button onclick="change(${p.id}, -1)">−</button><span>${q}</span><button onclick="change(${p.id}, 1)">+</button>`
+          : `<button class="add" onclick="change(${p.id}, 1)">Savatga</button>`;
+        return `
+          <div class="card">
+            <div class="pic">${p.icon}</div>
+            <div class="name">${p.name}</div>
+            <div class="meta">${p.material}</div>
+            <div class="price">${p.price.toLocaleString("ru-RU")} so'm</div>
+            <div class="ctrl">${ctrl}</div>
+          </div>`;
+      }).join("");
     }
 
     renderTabs();
