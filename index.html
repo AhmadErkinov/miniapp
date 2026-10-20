@@ -3,30 +3,87 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mini App</title>
+  <title>3D Do'kon</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     body {
+      margin: 0;
       font-family: sans-serif;
-      padding: 20px;
       background: var(--tg-theme-bg-color, #fff);
       color: var(--tg-theme-text-color, #000);
     }
+    header { padding: 16px; }
+    h2 { margin: 0; }
+    .tabs { display: flex; gap: 8px; overflow-x: auto; padding: 0 16px 12px; }
+    .tab {
+      flex: none; padding: 8px 14px; border-radius: 20px;
+      border: 1px solid #8886; background: none; color: inherit; font-size: 14px;
+    }
+    .tab.active {
+      background: var(--tg-theme-button-color, #2481cc);
+      color: var(--tg-theme-button-text-color, #fff);
+      border-color: transparent;
+    }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 16px 24px; }
+    .card { border: 1px solid #8884; border-radius: 12px; padding: 12px; }
+    .pic { font-size: 40px; text-align: center; padding: 12px 0; }
+    .name { font-weight: 600; font-size: 14px; }
+    .meta { font-size: 12px; opacity: 0.7; margin-top: 4px; }
+    .price { margin-top: 6px; font-weight: 600; color: var(--tg-theme-link-color, #2481cc); }
   </style>
 </head>
 <body>
-  <h2 id="salom">Salom!</h2>
-  <p>Mini App ishlayapti ✅</p>
+  <header><h2>3D Do'kon</h2></header>
+  <div class="tabs" id="tabs"></div>
+  <div class="grid" id="grid"></div>
 
   <script>
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
-    const user = tg.initDataUnsafe?.user;
-    if (user) {
-      document.getElementById("salom").textContent = "Salom, " + user.first_name + "!";
+
+    const categories = [
+      "Hammasi", "Suvenirlar", "Dekorativ buyumlar",
+      "Ehtiyot qismlar", "Kantselyariya", "Robototexnika"
+    ];
+
+    // Namuna ma'lumotlar: keyin o'zingizniki bilan almashtirasiz
+    const products = [
+      { name: "Minora brelok", cat: "Suvenirlar", price: 25000, material: "PLA", icon: "🗼" },
+      { name: "Gul tuvak", cat: "Dekorativ buyumlar", price: 60000, material: "PLA", icon: "🪴" },
+      { name: "Shesterna 20 tish", cat: "Ehtiyot qismlar", price: 15000, material: "PETG", icon: "⚙️" },
+      { name: "Qalam qutisi", cat: "Kantselyariya", price: 40000, material: "PLA", icon: "✏️" },
+      { name: "Servo mahkamlagich", cat: "Robototexnika", price: 30000, material: "PETG", icon: "🤖" }
+    ];
+
+    let active = "Hammasi";
+
+    function renderTabs() {
+      const box = document.getElementById("tabs");
+      box.innerHTML = "";
+      categories.forEach(c => {
+        const b = document.createElement("button");
+        b.className = "tab" + (c === active ? " active" : "");
+        b.textContent = c;
+        b.onclick = () => { active = c; renderTabs(); renderProducts(); };
+        box.appendChild(b);
+      });
     }
+
+    function renderProducts() {
+      const grid = document.getElementById("grid");
+      const list = active === "Hammasi" ? products : products.filter(p => p.cat === active);
+      grid.innerHTML = list.map(p => `
+        <div class="card">
+          <div class="pic">${p.icon}</div>
+          <div class="name">${p.name}</div>
+          <div class="meta">${p.material}</div>
+          <div class="price">${p.price.toLocaleString("ru-RU")} so'm</div>
+        </div>`).join("");
+    }
+
+    renderTabs();
+    renderProducts();
   </script>
 </body>
 </html>
-
